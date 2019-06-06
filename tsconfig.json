@@ -6,8 +6,18 @@
     "sourceMap": true,
     "rootDir": "src",
     "outDir": "dist",
+    "skipLibCheck": true,
     "lib": [
       "esnext", "dom"
-    ]
-  }
+    ],
+  },
+  "filesGlob": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+      "dist",
+      "node_modules",
+      "typings/browser",
+      "typings/browser.d.ts"
+  ],
 }

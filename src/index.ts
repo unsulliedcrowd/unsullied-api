@@ -10,4 +10,10 @@ const server = new GraphQLServer({
     prisma,
   }),
 })
-server.start(() => console.log(`Server is running on http://localhost:4000`))
+
+// Start the server when executed directly
+if (require.main === module) {
+  server.start(() => console.log(`Server is running on http://localhost:4000`))
+}
+
+export default server;
