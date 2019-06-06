@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "unsullied-api": {
+      "schemaPath": "src/schema.graphql"
+    }
+  }
+}
