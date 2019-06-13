@@ -1,0 +1,43 @@
+# The main prefix
+@prefix : <https://unsullied.crowd/> .
+
+# Prerequisites for basic definition
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+# TrashCan
+:TrashCan
+  a owl:Class ;
+  rdfs:subClassOf owl:Thing .
+
+:name
+  a owl:ObjectProperty, owl:FunctionalProperty ;
+  rdfs:domain :TrashCan ;
+  rdfs:range xsd:string .
+
+:location
+  a owl:ObjectProperty, owl:FunctionalProperty ;
+  rdfs:domain :TrashCan ;
+  rdfs:range xsd:string .
+
+:image
+  a owl:ObjectProperty, owl:FunctionalProperty ;
+  rdfs:domain :TrashCan ;
+  rdfs:range :ImageObject .
+
+:isFull
+  a owl:ObjectProperty, owl:FunctionalProperty ;
+  rdfs:domain :TrashCan ;
+  rdfs:range xsd:boolean .
+
+:createdAt
+  a owl:ObjectProperty, owl:FunctionalProperty ;
+  rdfs:domain :TrashCan ;
+  rdfs:range xsd:dateTime .
+
+:updatedAt
+  a owl:ObjectProperty, owl:FunctionalProperty ;
+  rdfs:domain :TrashCan ;
+  rdfs:range xsd:dateTime .

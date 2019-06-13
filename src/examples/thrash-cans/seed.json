@@ -1,0 +1,24 @@
+[
+  {
+    "@id": "https://unsullied.crowd/thrashCan/1",
+    "@type": "ThrashCan",
+    "name": "The thrash can outside of the EWI entrance",
+    "location": "just outside of the EWI entrance",
+    "image": "https://unsullied.crowd/thrashCan/1/image.png",
+    "isFull": "false",
+    "createdAt": "2019-06-13T16:18:16.244Z",
+    "updatedAt": "2019-06-13T16:18:16.244Z"
+  },
+  {
+    "@id": "https://unsullied.crowd/thrashCan/2",
+    "@type": "ThrashCan",
+    "createdAt": "2019-06-13T16:18:16.244Z",
+    "updatedAt": "2019-06-13T16:18:16.244Z"
+  },
+  {
+    "@id": "https://unsullied.crowd/thrashCan/3",
+    "@type": "ThrashCan",
+    "createdAt": "2019-06-13T16:18:16.244Z",
+    "updatedAt": "2019-06-13T16:18:16.244Z"
+  }
+]
