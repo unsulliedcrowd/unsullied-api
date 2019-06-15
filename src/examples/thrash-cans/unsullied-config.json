@@ -1,4 +1,5 @@
 {
+  "schemaFile": "/home/steffan/Projects/unsullied-api/src/examples/thrash-cans/schema.ttl",
   "taskGenerationConfig": {
     "classesEnabled": ["TrashCan"]
   }

@@ -3,6 +3,7 @@ import * as tasks from './tasks';
 import * as crowd from './crowd';
 
 export type UnsulliedConfig = {
+  schemaFile: string,
   taskGenerationConfig: tasks.TaskGenerationConfig,
 };
 
@@ -11,8 +12,8 @@ export type UnsulliedInterface = {
   crowd: crowd.Crowd,
 };
 
-export function initialize(config: UnsulliedConfig): UnsulliedInterface {
-  const _schema = schema.Schema.load(config);
+export async function initialize(config: UnsulliedConfig): Promise<UnsulliedInterface> {
+  const _schema = await schema.Schema.load(config);
   const _crowd = crowd.Crowd.load(config);
 
   return {

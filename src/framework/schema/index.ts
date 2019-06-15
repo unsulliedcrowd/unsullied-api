@@ -1,3 +1,9 @@
+import * as path from 'path';
+import * as fs from 'fs';
+
+import * as RDFTools from 'rdf-tools';
+import * as semtools from 'semantic-toolkit';
+
 import { TaskGenerationConfig, TaskGeneration, Task } from '..';
 
 export type RDFClass = string;
@@ -6,27 +12,43 @@ export type RDFPredicate = string;
 export type RDFObject = string;
 
 export type SchemaConfig = {
-  taskGenerationConfig: TaskGenerationConfig
+  schemaFile: string,
+  taskGenerationConfig: TaskGenerationConfig,
 };
 
 export class Schema {
   config: SchemaConfig
+  graph: any;
 
-  constructor(config) {
+  constructor(config, graph) {
     this.config = config;
+    this.graph = graph;
   }
 
   generateTasks(): Task[] {
     const enabledClasses = Schema.getClasses(this, this.config.taskGenerationConfig);
-    return enabledClasses.map(enabledClass => {
-      return TaskGeneration.generateFindTask(enabledClass);
+    const findTasks =  enabledClasses.map(enabledClass => {
+      return TaskGeneration.generateFindTask(this, enabledClass);
     });
+
+    return [
+      ...findTasks
+    ];
   }
 };
 
 export module Schema {
-  export function load(config: SchemaConfig): Schema {
-    return new Schema(config);
+  export async function load(config: SchemaConfig): Promise<Schema> {
+    const turtle = fs.readFileSync(config.schemaFile).toString();
+    const graph = RDFTools.getRDFGraph(turtle);
+
+    // console.log('Schema config:', config);
+    // const schemaFile = path.join(__dirname, "../../../src/examples/thrash-cans/schema.ttl");
+    // console.log(schemaFile, config.schemaFile);
+    // console.log(__dirname);
+    // console.log('Turle:', turtle);
+
+    return new Schema(config, graph);
   }
 
   export function getClasses(schema: Schema, config: TaskGenerationConfig): RDFClass[] {
@@ -40,12 +62,3 @@ export module Schema {
     return [];
   }
 }
-
-
-// export function loadSchema(schemaString: string): Schema {
-//   return Schema.fromString(string);
-// }
-
-// export function saveSchema(schema: Schema) {
-//
-// }

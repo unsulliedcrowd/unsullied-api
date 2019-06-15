@@ -16,6 +16,24 @@
 - [ ] Other stuff
   - [ ] Database support
 
+- Base schema abstraction on RDF (subject, predicate, object).
+- Find-Task concerns finding new subjects.
+- Fix-Task concerns finding missing object for related predicates.
+- Verify-Task concerns verifying the current state of the object to be representative for the real world.
+
+Needed:
+- [ ] Generate a list of entity types that seem to have missing data. This can be used to generate new Find-Tasks. In order for the task to make sense, more than just a subject is needed, since a subject (id) contains no description of how to get more information about it. Rather, a description of the subject is required in terms of a name and location.
+  - [ ] Expected amount of entities of each type?
+- Generate a list of known subjects with missing objects based on the schema and existing data. This can be used to generate new Fix-Tasks.
+- [ ] Verify-Tasks can be created in response to enough completed Fix-Tasks.
+
+Questions for future work:
+- How to find new predicates for existing Entity definitions, and by extension find new types of Entities? (i.e. crowdsourcing the schema)
+
+Source of information (worker interface type): question (generic), upload image (image, time, location, potential labeling via image recognition),  
+
+Task Pipeline Pattern (generation, aggregation): Find-Fix-Verify
+
 
 ## Examples
 Query:

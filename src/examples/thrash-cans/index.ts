@@ -8,11 +8,26 @@ import * as seedData from './seed.json';
 // Load config
 import * as unsulliedConfig from './unsullied-config.json';
 
-// Initialize framework
-const unsulliedInterface = UnsulliedKnowledge.initialize(unsulliedConfig);
+export async function runExample() {
 
-// Do things
+  // Initialize framework
+  const unsulliedInterface = await UnsulliedKnowledge.initialize(unsulliedConfig);
 
-// Generate tasks
-const tasks = unsulliedInterface.schema.generateTasks();
-console.log(JSON.stringify(tasks));
+  // Do things
+
+  // Generate tasks
+  const tasks = unsulliedInterface.schema.generateTasks();
+  console.log(JSON.stringify(tasks.map(task => task.toString())));
+
+
+  // Create some workers
+
+  // Assign tasks
+
+  // Generate results
+
+  // Aggregate results
+
+}
+
+runExample();

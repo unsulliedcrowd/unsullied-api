@@ -1,13 +1,13 @@
-import { RDFClass, FindTask, FixTask, VerifyTask } from '..';
+import { RDFClass, FindTask, FixTask, VerifyTask, Schema } from '..';
 
-export function generateFindTask(rdfClass: RDFClass): FindTask {
-  return new FindTask(rdfClass);
+export function generateFindTask(schema: Schema, rdfClass: RDFClass): FindTask {
+  return new FindTask(schema, rdfClass);
 }
 
-export function generateFixTask(rdfClass: RDFClass): FixTask {
-  return new FixTask(rdfClass);
+export function generateFixTask(schema: Schema, rdfClass: RDFClass): FixTask {
+  return new FixTask(schema, rdfClass);
 }
 
-export function generateVerifyTask(rdfClass: RDFClass): VerifyTask {
-  return new VerifyTask(rdfClass);
+export function generateVerifyTask(schema: Schema, rdfClass: RDFClass): VerifyTask {
+  return new VerifyTask(schema, rdfClass);
 }
