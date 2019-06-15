@@ -1,3 +1,4 @@
+import { GraphQLServer } from 'graphql-yoga'
 import * as UnsulliedKnowledge from '../../framework';
 
 // Load schema
@@ -28,6 +29,28 @@ export async function runExample() {
 
   // Aggregate results
 
+  const { typeDefs, resolvers, context } = UnsulliedKnowledge.makeGraphQLConfig(unsulliedInterface);
+
+  const server = new GraphQLServer({
+    typeDefs,
+    resolvers,
+    context: request => ({
+      ...request,
+      ...context
+    }),
+  })
+
+  // Start the server when executed directly
+  if (require.main === module) {
+    server.start({
+      subscriptions: {
+        onConnect:(...args) => {
+          console.log('Connection!', args);
+        },
+        keepAlive: 3000
+      }
+    },() => console.log(`Server is running on http://localhost:4000`))
+  }
 }
 
 runExample();

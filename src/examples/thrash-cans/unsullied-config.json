@@ -1,5 +1,6 @@
 {
   "schemaFile": "/home/steffan/Projects/unsullied-api/src/examples/thrash-cans/schema.ttl",
+  "redisUrl": "redis://localhost:6379",
   "taskGenerationConfig": {
     "classesEnabled": ["TrashCan"]
   }

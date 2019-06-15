@@ -34,6 +34,22 @@ Source of information (worker interface type): question (generic), upload image 
 
 Task Pipeline Pattern (generation, aggregation): Find-Fix-Verify
 
+Task generation:
+- Generate Find-Tasks based on entity types. (schema only)
+- Generate Fix-Tasks based on existing entity instances. (some kind of DB needed, with potential seed data)
+- Generate Verify-Tasks based on incoming results/known data.
+
+- [ ] Add database (redis)
+- [ ] Finish schema logic
+- [ ] Generate Find and Fix tasks
+
+- [ ] Build worker logic
+- [ ] Assign tasks to workers
+- [ ] Simulate worker results
+- [ ] Build streaming logic
+
+- [ ] Generate Verify-Tasks based on incoming results
+
 
 ## Examples
 Query:

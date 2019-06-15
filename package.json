@@ -24,11 +24,17 @@
     "powerAssert": false
   },
   "dependencies": {
+    "apollo-link-ws": "^1.0.18",
     "bcryptjs": "2.4.3",
     "graphql-yoga": "1.17.4",
+    "iterall": "^1.2.2",
     "jsonwebtoken": "8.5.1",
+    "md5": "^2.2.1",
     "prisma-client-lib": "^1.34.0",
     "rdf-tools": "^0.4.5",
+    "redis": "^2.8.0",
+    "rxjs": "^6.5.2",
+    "rxjs-to-async-iterator": "^2.1.3",
     "semantic-toolkit": "^0.2.1"
   },
   "devDependencies": {
