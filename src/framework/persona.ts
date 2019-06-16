@@ -6,5 +6,10 @@ export type Persona = {
 };
 
 export module Persona {
-
+  export const DEFAULT = {
+    age: -1,
+    location: "<unkown>",
+    eagerness: "<unkown>",
+    knowledgeDomains: []
+  };
 };

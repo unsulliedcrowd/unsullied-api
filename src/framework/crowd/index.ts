@@ -12,5 +12,5 @@ export module Crowd {
   }
 }
 
-export * from './persona';
+// export * from './persona';
 export * from './worker';

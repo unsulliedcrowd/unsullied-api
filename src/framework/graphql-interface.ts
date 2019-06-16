@@ -12,32 +12,6 @@ import {
   ResultState,
 } from '.';
 
-// export function observableToAsyncIterator<V>(observable: Observable<V>) {
-//   // return {
-//   //   next: async function() {
-//   //     return {
-//   //       value: {
-//   //         state: {
-//   //           config: {
-//   //             schemaFile: 'bla'
-//   //           }
-//   //         }
-//   //       },
-//   //       done: false
-//   //     }
-//   //   },
-//   //   return() {
-//   //     return Promise.resolve({ value: undefined, done: true });
-//   //   },
-//   //   throw(error) {
-//   //     return Promise.reject(error);
-//   //   },
-//   //   [$$asyncIterator]() {
-//   //     return this;
-//   //   },
-//   // };
-// }
-
 const typeDefs = `
   type Query {
     currentState: State!
@@ -82,6 +56,20 @@ const typeDefs = `
   type Subscription {
     currentState: State!
   }
+
+  type Profile {
+    id: ID!
+    name: String
+  }
+
+  type Worker {
+    profile: Profile!
+  }
+
+  type Mutation {
+    registerWorker(name: String): Worker!
+  }
+
 `
 
 const resolvers = {
@@ -115,6 +103,13 @@ const resolvers = {
       },
     }
   },
+  Mutation: {
+    async registerWorker(parent, { name }, { unsullied }) {
+      const worker = (unsullied as UnsulliedInterface).control.crowdControl.registerWorker({ name });
+
+      return worker;
+    },
+  }
 }
 
 export const STATE_CHANNEL = 'state';
@@ -123,7 +118,7 @@ export function makeGraphQLConfig(unsullied: UnsulliedInterface) {
 
   (unsullied as UnsulliedInterface).control.observable.subscribe({
     next: state => {
-      console.log('Publishing state:', state);
+      // console.log('Publishing state:', state);
       pubsub.publish(STATE_CHANNEL, { currentState: state });
     },
   });

@@ -13,7 +13,8 @@ export class Worker {
 
 export module Worker {
   export type Profile = {
-
+    id?: string,
+    name?: string
   };
 
   export module Profile {

@@ -1,4 +1,4 @@
-import * as schema from './schema';
+import * as schema from './knowledge';
 import * as tasks from './tasks';
 import * as crowd from './crowd';
 import * as observables from './observables';
@@ -28,8 +28,9 @@ export async function initialize(config: UnsulliedConfig): Promise<UnsulliedInte
   };
 }
 
-export * from './schema';
+export * from './knowledge';
 export * from './tasks';
+export * from './persona';
 export * from './crowd';
 export * from './observables';
 

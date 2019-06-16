@@ -45,7 +45,7 @@ export async function runExample() {
     server.start({
       subscriptions: {
         onConnect:(...args) => {
-          console.log('Connection!', args);
+          console.log('Connection!');
         },
         keepAlive: 3000
       }
