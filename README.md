@@ -50,6 +50,18 @@ Task generation:
 
 - [ ] Generate Verify-Tasks based on incoming results
 
+Micro-task result types: plain text answer, labeling (with preset options, collaborative labeling tasks where crowd decides on top-k labels), provide an image, yes/no (boolean), number (int, real number), error (task can not be completed by worker, optional feedback)
+
+Entity: ThrashCan -> Passive Find-Task, restrict 'location' property to range 'TU Delft campus', stale after 1 day, covers properties {name, location, image}, grouped to plain-text name and 'upload an image' task.
+
+Property isFull: -> Active Fix-Task, boolean "label image" task, "Would you say this ThrashCan is full?" (split isSomething based on 'is' and lowercase all words)
+
+Meta-properties: createdAt, updatedAt (managed by the system)
+
+All properties covered!
+
+Quality assurance: Verify-Tasks generated based on other tasks, 1 passive Find-Task, no verification i.e. every result is immediately accepted, 1 active Fix-Task, threshold 10, at least 10 workers must agree on the labeling
+
 
 ## Examples
 Query:

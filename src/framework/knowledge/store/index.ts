@@ -15,7 +15,7 @@ export class RedisStore<V> implements Store<V> {
   prefix: string;
 
   constructor(config: UnsulliedConfig, prefix = "") {
-    this.client = redis.createClient(config.redisUrl);
+    // this.client = redis.createClient(config.redisUrl);
     this.prefix = prefix;
   }
 

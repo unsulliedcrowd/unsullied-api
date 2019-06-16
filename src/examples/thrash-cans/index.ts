@@ -47,6 +47,9 @@ export async function runExample() {
         onConnect:(...args) => {
           console.log('Connection!');
         },
+        onDisconnect:(...args) => {
+          console.log('Disconnect!', args);
+        },
         keepAlive: 3000
       }
     },() => console.log(`Server is running on http://localhost:4000`))

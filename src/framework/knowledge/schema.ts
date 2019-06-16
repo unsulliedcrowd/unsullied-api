@@ -25,6 +25,10 @@ export class Schema {
     this.graph = graph;
   }
 
+  async initialize() {
+
+  }
+
   generateTasks(): Task[] {
     const enabledClasses = Schema.getClasses(this, this.config.taskGenerationConfig);
     const findTasks =  enabledClasses.map(enabledClass => {
@@ -38,7 +42,7 @@ export class Schema {
 };
 
 export module Schema {
-  export async function load(config: SchemaConfig): Promise<Schema> {
+  export function load(config: SchemaConfig): Schema {
     const turtle = fs.readFileSync(config.schemaFile).toString();
     const graph = RDFTools.getRDFGraph(turtle);
 

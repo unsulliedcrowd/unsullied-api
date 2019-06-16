@@ -27,6 +27,7 @@ export module Question {
 
 };
 
+export * from './micro-task';
 export * from './task';
 export * from './generation';
 export * from './allocation';

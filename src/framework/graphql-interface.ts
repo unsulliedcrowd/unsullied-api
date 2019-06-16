@@ -9,13 +9,11 @@ import {
   ConfigState,
   CrowdState,
   TaskState,
-  ResultState,
+  KnowledgeState,
 } from '.';
 
 const typeDefs = `
-  type Query {
-    currentState: State!
-  }
+
 
   type ConfigState {
     schemaFile: String
@@ -41,7 +39,7 @@ const typeDefs = `
     totalResults: Int!
   }
 
-  type ResultState {
+  type KnowledgeState {
     stats: ResultStats!
   }
 
@@ -50,11 +48,20 @@ const typeDefs = `
     config: ConfigState!
     crowd: CrowdState!
     tasks: TaskState!
-    results: ResultState!
+    results: KnowledgeState!
   }
 
-  type Subscription {
-    currentState: State!
+  type MicroTask {
+    taskType: String!
+    taskParams: [String]!
+    interfaceType: String!
+    interfaceParams: [String]!
+    resultType: String!
+    resultParams: [String]!
+  }
+
+  type TaskResult {
+    isSubmitted: Boolean!
   }
 
   type Profile {
@@ -64,22 +71,36 @@ const typeDefs = `
 
   type Worker {
     profile: Profile!
+    currentState: WorkerState!
+  }
+
+  type WorkerState {
+    isOnline: Boolean!
+    currentTask: MicroTask
+  }
+
+  type Query {
+    currentState: State!
+    workerState(workerId: ID!): WorkerState!
   }
 
   type Mutation {
     registerWorker(name: String): Worker!
+    submitTaskResult(taskString: String!, taskResultString: String!): TaskResult!
+  }
+
+  type Subscription {
+    currentState: State!
+    workerState(workerId: ID!): WorkerState!
   }
 
 `
 
+const existingChannels = {
+
+};
+
 const resolvers = {
-  Query: {
-    currentState: (parent, args, { unsullied }) => {
-      const state = (unsullied as UnsulliedInterface).control.currentState;
-      console.log('Queried state:', state);
-      return state;
-    },
-  },
   ConfigState: {
     schemaFile: (state: ConfigState) => state.schemaFile,
   },
@@ -89,19 +110,26 @@ const resolvers = {
   TaskState: {
     stats: (state: TaskState) => state.stats,
   },
-  ResultState: {
-    stats: (state: ResultState) => state.stats,
+  KnowledgeState: {
+    stats: (state: KnowledgeState) => state.stats,
   },
   State: {
     config: state => state.config,
   },
-  Subscription: {
-    currentState: {
-      subscribe: (parent, args, { unsullied, pubsub }) => {
-        const it = pubsub.asyncIterator(STATE_CHANNEL);
-        return it;
-      },
-    }
+  Query: {
+    currentState: (parent, args, { unsullied }) => {
+      const state = (unsullied as UnsulliedInterface).control.currentState;
+      console.log('Queried state:', state);
+      return state;
+    },
+    workerState: (parent, { workerId }, { unsullied }) => {
+      if (!((unsullied as UnsulliedInterface).control.crowdControl.workerIsAvailable(workerId))) throw new Error(`Worker with ID "${workerId}" is not available.`);
+      const worker = (unsullied as UnsulliedInterface).control.crowdControl.getAvailableWorker(workerId);
+
+      const state = worker.currentState;
+      console.log('Queried state:', state);
+      return state;
+    },
   },
   Mutation: {
     async registerWorker(parent, { name }, { unsullied }) {
@@ -109,7 +137,47 @@ const resolvers = {
 
       return worker;
     },
-  }
+    async submitTaskResult(parent, { taskString, taskResultString }, { unsullied }) {
+      await (unsullied as UnsulliedInterface).control.taskControl.submitTaskResult(taskString, taskResultString);
+      return { isSubmitted: true };
+    },
+  },
+  Subscription: {
+    currentState: {
+      subscribe: (parent, args, { unsullied, pubsub }) => {
+        const it = pubsub.asyncIterator(STATE_CHANNEL);
+        return it;
+      },
+    },
+    workerState: {
+      subscribe: (parent, { workerId }, { unsullied, pubsub }) => {
+        if (!((unsullied as UnsulliedInterface).control.crowdControl.workerIsAvailable(workerId))) throw new Error(`Worker with ID "${workerId}" is not available.`);
+        const channel = "workerState" + workerId;
+
+        let exists = channel in existingChannels;
+
+        const worker = (unsullied as UnsulliedInterface).control.crowdControl.getAvailableWorker(workerId);
+        console.log(exists, worker);
+
+        const it = pubsub.asyncIterator(channel);
+
+        if (!exists) {
+          worker.subject.subscribe({
+            next: state => {
+              // console.log('Publishing state:', state);
+              pubsub.publish(channel, { workerState: state });
+            },
+          });
+
+          existingChannels[channel] = true;
+        } else {
+          pubsub.publish(channel, { workerState: worker.currentState });
+        }
+
+        return it;
+      },
+    }
+  },
 }
 
 export const STATE_CHANNEL = 'state';
