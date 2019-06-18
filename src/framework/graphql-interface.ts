@@ -35,12 +35,13 @@ const typeDefs = `
     stats: TaskStats!
   }
 
-  type ResultStats {
-    totalResults: Int!
+  type KnowledgeStats {
+    totalEntityTypes: Int!
   }
 
   type KnowledgeState {
-    stats: ResultStats!
+    stats: KnowledgeStats!
+    knownClasses: [String]!
   }
 
   type State {
@@ -48,7 +49,7 @@ const typeDefs = `
     config: ConfigState!
     crowd: CrowdState!
     tasks: TaskState!
-    results: KnowledgeState!
+    knowledge: KnowledgeState!
   }
 
   type MicroTask {
@@ -81,6 +82,7 @@ const typeDefs = `
 
   type Query {
     currentState: State!
+    configState: ConfigState!
     workerState(workerId: ID!): WorkerState!
   }
 
@@ -91,6 +93,7 @@ const typeDefs = `
 
   type Subscription {
     currentState: State!
+    configState: ConfigState!
     workerState(workerId: ID!): WorkerState!
   }
 
@@ -122,12 +125,17 @@ const resolvers = {
       console.log('Queried state:', state);
       return state;
     },
+    configState: (parent, args, { unsullied }) => {
+      const state = (unsullied as UnsulliedInterface).control.configControl.currentState;
+      console.log('Queried configState:', state);
+      return state;
+    },
     workerState: (parent, { workerId }, { unsullied }) => {
       if (!((unsullied as UnsulliedInterface).control.crowdControl.workerIsAvailable(workerId))) throw new Error(`Worker with ID "${workerId}" is not available.`);
       const worker = (unsullied as UnsulliedInterface).control.crowdControl.getAvailableWorker(workerId);
 
       const state = worker.currentState;
-      console.log('Queried state:', state);
+      // console.log('Queried state:', state);
       return state;
     },
   },
@@ -149,6 +157,12 @@ const resolvers = {
         return it;
       },
     },
+    configState: {
+      subscribe: (parent, args, { unsullied, pubsub }) => {
+        const it = pubsub.asyncIterator(CONFIG_CHANNEL);
+        return it;
+      },
+    },
     workerState: {
       subscribe: (parent, { workerId }, { unsullied, pubsub }) => {
         if (!((unsullied as UnsulliedInterface).control.crowdControl.workerIsAvailable(workerId))) throw new Error(`Worker with ID "${workerId}" is not available.`);
@@ -157,7 +171,7 @@ const resolvers = {
         let exists = channel in existingChannels;
 
         const worker = (unsullied as UnsulliedInterface).control.crowdControl.getAvailableWorker(workerId);
-        console.log(exists, worker);
+        // console.log(exists, worker);
 
         const it = pubsub.asyncIterator(channel);
 
@@ -180,6 +194,7 @@ const resolvers = {
   },
 }
 
+export const CONFIG_CHANNEL = 'config';
 export const STATE_CHANNEL = 'state';
 export function makeGraphQLConfig(unsullied: UnsulliedInterface) {
   const pubsub = new PubSub();
@@ -187,6 +202,7 @@ export function makeGraphQLConfig(unsullied: UnsulliedInterface) {
   (unsullied as UnsulliedInterface).control.observable.subscribe({
     next: state => {
       // console.log('Publishing state:', state);
+      pubsub.publish(CONFIG_CHANNEL, { configState: state.config });
       pubsub.publish(STATE_CHANNEL, { currentState: state });
     },
   });

@@ -48,7 +48,7 @@ export async function runExample() {
           console.log('Connection!');
         },
         onDisconnect:(...args) => {
-          console.log('Disconnect!', args);
+          console.log('Disconnect!');
         },
         keepAlive: 3000
       }

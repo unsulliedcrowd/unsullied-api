@@ -8,10 +8,15 @@ export class KnowledgeBase {
   store: Store<EntityData>;
   seedData: EntityData[];
 
-  constructor(schema, store, initialData: EntityData[] = []) {
+  constructor(schema: Schema, store: Store<EntityData>, initialData: EntityData[] = []) {
     this.schema = schema;
     this.store = store;
     this.seedData = initialData;
+  }
+
+  getClasses() {
+    // console.log(this.schema);
+    return this.schema.getClasses();
   }
 
   async seed() {

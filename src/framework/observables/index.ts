@@ -14,7 +14,7 @@ import {
   KnowledgeBase,
   Schema,
   Store,
-  RedisStore,
+  EphemeralStore,
   EntityData
 } from '..';
 
@@ -42,14 +42,14 @@ export class UnsulliedControl {
 
   constructor(config: UnsulliedConfig) {
     this.schema = Schema.load(config);
-    this.store = new RedisStore(config);
-    this.knowledgeBase = new KnowledgeBase(this.store, this.schema);
+    this.store = new EphemeralStore(this.schema);
+    this.knowledgeBase = new KnowledgeBase(this.schema, this.store);
 
     this.timer = timer(0, 1000).pipe(map(() => Date.now()));
     this.configControl = new ConfigControl(config);
-    this.crowdControl = new CrowdControl();
-    this.knowledgeControl = new KnowledgeControl(this.knowledgeBase);
-    this.taskControl = new TaskControl(this.knowledgeControl);
+    this.crowdControl = new CrowdControl(this.configControl);
+    this.knowledgeControl = new KnowledgeControl(this.configControl, this.knowledgeBase);
+    this.taskControl = new TaskControl(this.configControl, this.knowledgeControl, this.crowdControl);
 
     this.observable  = combineLatest(
       this.timer,
@@ -76,8 +76,16 @@ export class UnsulliedControl {
       console.log('Setting initial state', initialState);
       this.currentState = initialState
     });
+
+    this.initialize();
   }
 
+  initialize() {
+    this.taskControl.initialize();
+    this.knowledgeControl.initialize();
+    this.crowdControl.initialize();
+    // this.configControl.initialize();
+  }
 
 
 }

@@ -13,8 +13,6 @@ export class Worker {
     this.persona = persona;
     this.currentState = Worker.State.INITIAL;
     this.subject = new BehaviorSubject(this.currentState);
-
-    this.assignTask(MicroTask.questionForLabel("This is a test question?", ["test1", "test2"]))
   }
 
   assignTask(task: MicroTask): Worker {
