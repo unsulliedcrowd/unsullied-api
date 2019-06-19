@@ -45,6 +45,7 @@ export module MicroTask {
 
   export module InterfaceTypes {
     export const QUESTION = "QUESTION";
+    export const IMAGE = "IMAGE";
   }
 
   export module ResultTypes {
@@ -52,17 +53,6 @@ export module MicroTask {
     export const LABEL = "LABEL";
     export const BOOLEAN = "BOOLEAN";
     export const IMAGE = "IMAGE";
-  }
-
-  export function questionForLabel(question: String, labels: String[]): MicroTask {
-    return {
-      taskType: TaskTypes.FIX,
-      taskParams: [],
-      interfaceType: InterfaceTypes.QUESTION,
-      interfaceParams: [ question ],
-      resultType: ResultTypes.LABEL,
-      resultParams: labels,
-    };
   }
 
   export function questionForImage(question: String): MicroTask {
@@ -73,6 +63,17 @@ export module MicroTask {
       interfaceParams: [ question ],
       resultType: ResultTypes.IMAGE,
       resultParams: [],
+    };
+  }
+
+  export function questionForImageBoolean(image: any, question: String, propertyName: String): MicroTask {
+    return {
+      taskType: TaskTypes.FIX,
+      taskParams: [],
+      interfaceType: InterfaceTypes.IMAGE,
+      interfaceParams: [ image, question ],
+      resultType: ResultTypes.BOOLEAN,
+      resultParams: [ propertyName ],
     };
   }
 }

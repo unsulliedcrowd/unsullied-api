@@ -69,7 +69,7 @@ export module TaskState {
     const diff = _.difference(newKnowledgeState.knownClasses, oldKnowledgeState.knownClasses);
     console.log("Diff known classes:", diff);
 
-    const findMicroTasks = diff.map(entityClass => {
+    const findMicroTasks = newKnowledgeState.knownClasses.map(entityClass => {
       const localName = semtools.getLocalName(entityClass);
       const location = currentConfigState.taskGenerationConfig.initialLocation;
 
@@ -84,20 +84,30 @@ export module TaskState {
       return microTask;
     });
 
-    const fixMicroTasks = newKnowledgeState.knownStaleEntities.map(entityClass => {
-      const localName = semtools.getLocalName(entityClass);
-      const location = currentConfigState.taskGenerationConfig.initialLocation;
-
-      let question;
-      if (location != null) question = `Please upload an image of a ${localName} within the area ${location}`;
-      else question = `Please upload an image of a ${localName}`;
-
-      // TODO: Build composite tasks
-      // question += ', along with a description'
-
-      const microTask = MicroTask.questionForImage(question);
+    const fixMicroTasks = newKnowledgeState.pendingResults.filter(result => {
+      const { file } = result;
+      return file != null;
+    }).map(taskResult => {
+      const image = (taskResult.file as any).filename;
+      const question = `Please label the following image of a ThrashCan according to the following labels`;
+      const microTask = MicroTask.questionForImageBoolean(image, question, "isFull");
       return microTask;
     });
+
+    // const fixMicroTasks = newKnowledgeState.knownStaleEntities.map(entityClass => {
+    //   const localName = semtools.getLocalName(entityClass);
+    //   const location = currentConfigState.taskGenerationConfig.initialLocation;
+    //
+    //   let question;
+    //   if (location != null) question = `Please upload an image of a ${localName} within the area ${location}`;
+    //   else question = `Please upload an image of a ${localName}`;
+    //
+    //   // TODO: Build composite tasks
+    //   // question += ', along with a description'
+    //
+    //   const microTask = MicroTask.questionForImage(question);
+    //   return microTask;
+    // });
 
     const findTasks = [];
     const passiveTasks = findTasks;
@@ -105,6 +115,7 @@ export module TaskState {
 
     const microTasks = [
       // MicroTask.questionForLabel("This is a test question?", ["test1", "test2"])
+      ...fixMicroTasks,
       ...findMicroTasks
     ];
 
