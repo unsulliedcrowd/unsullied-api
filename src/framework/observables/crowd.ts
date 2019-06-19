@@ -92,7 +92,24 @@ export module CrowdState {
       }
     }
 
-    console.log('Assigning worker...', newState);
+    console.log('Assigning worker...');
+    return newState;
+  }
+
+  export function releaseWorker(state: CrowdState, worker: Worker) {
+    const newState = {
+      ...state,
+      stats: {
+        ...state.stats,
+        availableWorkersTotal: (state.stats.availableWorkersTotal + 1)
+      },
+      crowd: {
+        availableWorkers: [].concat(state.crowd.availableWorkers, worker),
+        engagedWorkers: _.without(state.crowd.engagedWorkers, worker),
+      }
+    }
+
+    console.log('Releasing worker...');
     return newState;
   }
 };
@@ -179,7 +196,6 @@ export class CrowdControl {
     const persona = Persona.DEFAULT;
     const worker = new Worker(profile, persona);
 
-    // TODO: Queue this
     const newState = CrowdState.addWorker(this.currentState, worker);
     this.currentState = newState;
     await queue.add(async () => this.subject.next(newState));
@@ -189,14 +205,22 @@ export class CrowdControl {
 
   async assignWorker(worker: Worker, microTask: MicroTask): Promise<Worker> {
     console.log("CrowdControl assigning worker")
-    const _worker = worker.assignTask(microTask);
+    // const _worker = await worker.assignTask(microTask);
 
-    // TODO: Queue this
     const newState = CrowdState.assignWorker(this.currentState, worker);
-    // this.currentState = newState;
+    this.currentState = newState;
     await queue.add(async () => this.subject.next(newState));
 
-    return _worker;
+    return worker;
+  }
+
+  async releaseWorker(worker: Worker): Promise<Worker> {
+    const newState = CrowdState.releaseWorker(this.currentState, worker);
+    console.log("CrowdControl releasing worker", newState)
+    this.currentState = newState;
+    await queue.add(async () => this.subject.next(newState));
+
+    return worker;
   }
 
 }

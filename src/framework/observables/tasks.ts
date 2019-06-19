@@ -2,13 +2,11 @@ import { BehaviorSubject, combineLatest } from 'rxjs';
 import { map, flatMap } from 'rxjs/operators';
 import * as semtools from 'semantic-toolkit';
 import * as _ from 'lodash';
+import PQueue from 'p-queue';
 
-function aggregateResults(pendingResults: TaskResult[]): EntityData {
-
-  return {
-
-  };
-}
+const queue = new PQueue({
+  concurrency: 1
+});
 
 import {
   KnowledgeControl,
@@ -61,12 +59,17 @@ export module TaskState {
 
     console.log("Pending results:", newKnowledgeState.pendingResults);
 
-    const entityData = aggregateResults(newKnowledgeState.pendingResults);
+    // const entityData = aggregateResults(newKnowledgeState.pendingResults);
+
+    // TODO: Update knowledge base here
 
 
+    console.log("Old known classes:", oldKnowledgeState.knownClasses);
     console.log("Known classes:", newKnowledgeState.knownClasses);
+    const diff = _.difference(newKnowledgeState.knownClasses, oldKnowledgeState.knownClasses);
+    console.log("Diff known classes:", diff);
 
-    const findMicroTasks = newKnowledgeState.knownClasses.map(entityClass => {
+    const findMicroTasks = diff.map(entityClass => {
       const localName = semtools.getLocalName(entityClass);
       const location = currentConfigState.taskGenerationConfig.initialLocation;
 
@@ -153,6 +156,18 @@ export module TaskState {
       microTasks: _.without(taskState.microTasks, task)
     };
   }
+
+  export function completeTask(taskState: TaskState, task: MicroTask, worker: Worker, taskResult: TaskResult) {
+    return {
+      ...taskState,
+      stats: {
+        ...taskState.stats,
+        availableTasksTotal: taskState.microTasks.length,
+        completedTasksTotal: taskState.microTasks.length + 1,
+      },
+      microTasks: _.without(taskState.microTasks, task)
+    };
+  }
 };
 
 export class TaskControl {
@@ -227,10 +242,37 @@ export class TaskControl {
   async assignTask(task: MicroTask, worker: Worker) {
     const newState = TaskState.assignTask(this.currentState, task, worker);
     await this.crowdControl.assignWorker(worker, task);
-    worker.assignTask(task);
+    await worker.assignTask(task);
     this.currentState = newState;
-    this.subject.next(newState);
+    await queue.add(async () => this.subject.next(newState));
     // return task;
+  }
+
+  async completeTask(task: MicroTask, worker: Worker, taskResult: TaskResult) {
+    const newState = TaskState.completeTask(this.currentState, task, worker, taskResult);
+    await this.crowdControl.releaseWorker(worker);
+    await worker.completeTask(taskResult);
+    this.currentState = newState;
+    await queue.add(async () => this.subject.next(newState));
+    // return task;
+  }
+
+  async submitTaskResult(workerId: string, taskString: string, taskResultString: string, file?: string): Promise<TaskResult> {
+    const taskResult: TaskResult = { workerId, taskString, taskResultString, file };
+
+    await this.knowledgeControl.submitTaskResult(taskResult);
+
+    const task = JSON.parse(taskString);
+    const worker = this.crowdControl.getWorker(workerId);
+    await this.completeTask(task, worker, taskResult);
+
+    // TODO: Aggregate task results here
+
+    // const newState = KnowledgeState.updateResults(this.currentState, taskResult);
+    // this.currentState = newState;
+    // await queue.add(async () => this.subject.next(newState));
+
+    return taskResult;
   }
 
 }

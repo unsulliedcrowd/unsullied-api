@@ -91,6 +91,7 @@ const typeDefs = `
 
   type WorkerState {
     isOnline: Boolean!
+    isWorkingOnTask: Boolean!
     currentTask: MicroTask
   }
 
@@ -102,7 +103,7 @@ const typeDefs = `
 
   type Mutation {
     registerWorker(name: String): Worker!
-    submitTaskResult(taskString: String!, taskResultString: String!, file: Upload): TaskResult!
+    submitTaskResult(workerId: ID!, taskString: String!, taskResultString: String!, file: Upload): TaskResult!
   }
 
   type Subscription {
@@ -160,14 +161,16 @@ const resolvers = {
 
       return worker;
     },
-    async submitTaskResult(parent, { taskString, taskResultString, file }, { unsullied }) {
+    async submitTaskResult(parent, args, { unsullied }) {
+      console.log(args);
+      const { workerId, taskString, taskResultString, file } = args;
       let _file;
       if (file) {
-        const _file = await file;
+        _file = await file;
         console.log('Got file!', _file.filename);
       }
 
-      (unsullied as UnsulliedInterface).control.knowledgeControl.submitTaskResult(taskString, taskResultString, _file);
+      await (unsullied as UnsulliedInterface).control.taskControl.submitTaskResult(workerId, taskString, taskResultString, _file);
       return { isSubmitted: true };
     },
   },

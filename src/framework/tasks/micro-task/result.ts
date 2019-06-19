@@ -1,5 +1,6 @@
 export type TaskResult = {
-  taskString: String,
-  taskResultString: String,
-  file: String
+  workerId: string,
+  taskString: string,
+  taskResultString: string,
+  file: string
 };

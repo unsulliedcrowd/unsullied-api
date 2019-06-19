@@ -3,6 +3,11 @@ import { BehaviorSubject, combineLatest } from 'rxjs';
 
 import { KnowledgeBase, RDFSubject, ConfigControl, TaskResult } from '..';
 import { map } from 'rxjs/operators';
+import PQueue from 'p-queue';
+
+const queue = new PQueue({
+  concurrency: 1
+});
 
 export type KnowledgeStats = {
   totalEntityTypes: number
@@ -74,7 +79,7 @@ export class KnowledgeControl {
     this.subject = new BehaviorSubject(this.currentState);
   }
 
-  initialize() {
+  async initialize() {
     combineLatest(
       this.configControl.subject,
     ).pipe(map((states) => {
@@ -83,35 +88,33 @@ export class KnowledgeControl {
       return this.currentState;
     })).subscribe(this.subject);
 
-    this.updateCurrentClasses();
+    await this.updateCurrentClasses();
   }
 
-  updateCurrentClasses(): RDFSubject[] {
+  async updateCurrentClasses(): Promise<RDFSubject[]> {
     const newClasses = this.knowledgeBase.getClasses();
 
     const newState = KnowledgeState.updateKnownClasses(this.currentState, newClasses);
-    this.subject.next(newState);
     this.currentState = newState;
+    await queue.add(async () => this.subject.next(newState));
 
     return newClasses;
   }
 
-  updateStaleEntities(): RDFSubject[] {
+  async updateStaleEntities(): Promise<RDFSubject[]> {
     const newClasses = this.knowledgeBase.getStaleEntities();
 
     const newState = KnowledgeState.updateKnownClasses(this.currentState, newClasses);
-    this.subject.next(newState);
     this.currentState = newState;
+    await queue.add(async () => this.subject.next(newState));
 
     return newClasses;
   }
 
-  submitTaskResult(taskString: String, taskResultString: String, file?: String): TaskResult {
-    const taskResult: TaskResult = { taskString, taskResultString, file };
-
+  async submitTaskResult(taskResult: TaskResult): Promise<TaskResult> {
     const newState = KnowledgeState.updateResults(this.currentState, taskResult);
-    this.subject.next(newState);
     this.currentState = newState;
+    await queue.add(async () => this.subject.next(newState));
 
     return taskResult;
   }

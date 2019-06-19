@@ -1,6 +1,11 @@
 import { Subject, BehaviorSubject } from 'rxjs';
 
 import { Persona, MicroTask, TaskResult } from '..';
+import PQueue from 'p-queue';
+
+const queue = new PQueue({
+  concurrency: 1
+});
 
 export class Worker {
   subject: Subject<Worker.State>;
@@ -15,17 +20,17 @@ export class Worker {
     this.subject = new BehaviorSubject(this.currentState);
   }
 
-  assignTask(task: MicroTask): Worker {
+  async assignTask(task: MicroTask): Promise<Worker> {
     const newState = Worker.State.assignTask(this.currentState, task);
-    this.subject.next(newState);
     this.currentState = newState;
+    await queue.add(async () => this.subject.next(newState));
     return this;
   }
 
-  completeTask(result: TaskResult): Worker {
+  async completeTask(result: TaskResult): Promise<Worker> {
     const newState = Worker.State.completeTask(this.currentState, result);
-    this.subject.next(newState);
     this.currentState = newState;
+    await queue.add(async () => this.subject.next(newState));
     return this;
   }
 }
