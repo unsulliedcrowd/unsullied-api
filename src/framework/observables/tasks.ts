@@ -1,5 +1,6 @@
 import { BehaviorSubject, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
+import * as semtools from 'semantic-toolkit';
 
 import {
   KnowledgeControl,
@@ -12,7 +13,8 @@ import {
   ConfigControl,
   CrowdControl,
   CrowdState,
-  Worker
+  Worker,
+  ConfigState
 } from '..';
 
 export type TaskStats = {
@@ -43,16 +45,34 @@ export module TaskState {
     microTasks: [],
   };
 
-  export function processKnowledgeState(taskState: TaskState, oldKnowledgeState: KnowledgeState, newKnowledgeState: KnowledgeState): TaskState {
+  export function processKnowledgeState(taskState: TaskState, oldKnowledgeState: KnowledgeState, newKnowledgeState: KnowledgeState, currentConfigState: ConfigState, currentCrowdState: CrowdState): TaskState {
     // TODO: Generate new tasks here, complete old tasks
     console.log('Processing knowledge state (generating and aggregating tasks)...');
+
+    console.log("Known classes:", newKnowledgeState.knownClasses);
+
+    const microTasks = newKnowledgeState.knownClasses.map(entityClass => {
+      const localName = semtools.getLocalName(entityClass);
+      const location = currentConfigState.taskGenerationConfig.initialLocation;
+
+      let question;
+      if (location != null) question = `Please upload an image of a ${localName} within the area ${location}`;
+      else question = `Please upload an image of a ${localName}`;
+
+      // TODO: Build composite tasks
+      // question += ', along with a description'
+
+      const microTask = MicroTask.questionForImage(question);
+      return microTask;
+    });
 
     const findTasks = [];
     const passiveTasks = findTasks;
     const activeTasks = [];
-    const microTasks = [
-      MicroTask.questionForLabel("This is a test question?", ["test1", "test2"])
-    ];
+
+    // const microTasks = [
+    //   // MicroTask.questionForLabel("This is a test question?", ["test1", "test2"])
+    // ];
 
     return {
       stats: {
@@ -74,7 +94,7 @@ export module TaskState {
     return taskState;
   }
 
-  export function processCrowdState(taskState: TaskState, oldCrowdState: CrowdState, newCrowdState: CrowdState): TaskState {
+  export function processCrowdState(taskState: TaskState, oldCrowdState: CrowdState, newCrowdState: CrowdState, currentConfigState: ConfigState, currentKnowledgeState: KnowledgeState): TaskState {
     // TODO: Assign tasks here
     const availableTasks = taskState.microTasks;
     const { availableWorkers} = newCrowdState.crowd;
@@ -85,9 +105,9 @@ export module TaskState {
 
     // TODO: Make this make sense
     const [ firstTask ] = availableTasks;
-    const [ firstWorker ] = availableWorkers;
-    const newState = TaskState.assignTask(taskState, firstTask, firstWorker);
-    firstWorker.assignTask(firstTask);
+    const [ lastWorker ] = availableWorkers.reverse();
+    const newState = TaskState.assignTask(taskState, firstTask, lastWorker);
+    lastWorker.assignTask(firstTask);
 
     return newState;
   }
@@ -130,7 +150,7 @@ export class TaskControl {
       const [ configState, knowledgeState, crowdState ] = states;
 
       if (knowledgeState != this.currentKnowledgeState) {
-        const newState = TaskState.processKnowledgeState(this.currentState, this.currentKnowledgeState, knowledgeState);
+        const newState = TaskState.processKnowledgeState(this.currentState, this.currentKnowledgeState, knowledgeState, this.configControl.currentState, this.currentCrowdState);
 
         this.currentState = newState;
         this.currentKnowledgeState = knowledgeState;
@@ -139,7 +159,7 @@ export class TaskControl {
       }
 
       if (crowdState != this.currentCrowdState) {
-        const newState = TaskState.processCrowdState(this.currentState, this.currentCrowdState, crowdState);
+        const newState = TaskState.processCrowdState(this.currentState, this.currentCrowdState, crowdState, this.configControl.currentState, this.currentKnowledgeState);
 
         this.currentState = newState;
         this.currentCrowdState = crowdState;

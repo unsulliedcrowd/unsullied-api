@@ -65,12 +65,12 @@ export module MicroTask {
     };
   }
 
-  export function questionForImage(): MicroTask {
+  export function questionForImage(question: String): MicroTask {
     return {
       taskType: TaskTypes.FIX,
       taskParams: [],
       interfaceType: InterfaceTypes.QUESTION,
-      interfaceParams: [],
+      interfaceParams: [ question ],
       resultType: ResultTypes.IMAGE,
       resultParams: [],
     };

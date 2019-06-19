@@ -1,5 +1,6 @@
 import { $$asyncIterator } from 'iterall';
 import { GraphQLServer, PubSub } from 'graphql-yoga';
+import { GraphQLUpload } from 'apollo-upload-server'
 
 import { Observable } from 'rxjs';
 require('rxjs-to-async-iterator');
@@ -13,10 +14,22 @@ import {
 } from '.';
 
 const typeDefs = `
+  scalar Upload
 
+  type File {
+    path: String!
+    filename: String!
+    mimetype: String!
+    encoding: String!
+  }
+
+  type TaskGenerationConfig {
+    initialLocation: String!
+  }
 
   type ConfigState {
     schemaFile: String
+    taskGenerationConfig: TaskGenerationConfig!
   }
 
   type CrowdState {
@@ -88,7 +101,7 @@ const typeDefs = `
 
   type Mutation {
     registerWorker(name: String): Worker!
-    submitTaskResult(taskString: String!, taskResultString: String!): TaskResult!
+    submitTaskResult(taskString: String!, taskResultString: String!, file: Upload): TaskResult!
   }
 
   type Subscription {
@@ -104,6 +117,7 @@ const existingChannels = {
 };
 
 const resolvers = {
+  Upload: GraphQLUpload,
   ConfigState: {
     schemaFile: (state: ConfigState) => state.schemaFile,
   },
@@ -145,7 +159,11 @@ const resolvers = {
 
       return worker;
     },
-    async submitTaskResult(parent, { taskString, taskResultString }, { unsullied }) {
+    async submitTaskResult(parent, { taskString, taskResultString, file }, { unsullied }) {
+      if (file) {
+        const { createReadStream, filename, mimetype, encoding } = await file;
+        console.log('Got file!', filename);
+      }
       await (unsullied as UnsulliedInterface).control.taskControl.submitTaskResult(taskString, taskResultString);
       return { isSubmitted: true };
     },

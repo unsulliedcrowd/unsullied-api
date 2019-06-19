@@ -81,9 +81,9 @@ export class UnsulliedControl {
   }
 
   initialize() {
-    this.taskControl.initialize();
     this.knowledgeControl.initialize();
     this.crowdControl.initialize();
+    this.taskControl.initialize();
     // this.configControl.initialize();
   }
 

@@ -1,10 +1,12 @@
 export type TaskGenerationConfig = {
   classesEnabled: string[],
+  initialLocation: String
 };
 
 export module TaskGenerationConfig {
   export const DEFAULT: TaskGenerationConfig = {
     classesEnabled: [],
+    initialLocation: null
   };
 }
 

@@ -2,6 +2,7 @@
   "schemaFile": "./src/examples/thrash-cans/schema.ttl",
   "redisUrl": "redis://localhost:6379",
   "taskGenerationConfig": {
-    "classesEnabled": ["TrashCan"]
+    "classesEnabled": ["TrashCan"],
+    "initialLocation": "TU Delft Campus"
   }
 }
