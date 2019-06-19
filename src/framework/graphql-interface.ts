@@ -37,6 +37,7 @@ const typeDefs = `
   }
 
   type CrowdStats {
+    seenWorkersTotal: Int!
     availableWorkersTotal: Int!
   }
 
@@ -145,8 +146,8 @@ const resolvers = {
       return state;
     },
     workerState: (parent, { workerId }, { unsullied }) => {
-      if (!((unsullied as UnsulliedInterface).control.crowdControl.workerIsAvailable(workerId))) throw new Error(`Worker with ID "${workerId}" is not available.`);
-      const worker = (unsullied as UnsulliedInterface).control.crowdControl.getAvailableWorker(workerId);
+      if (!((unsullied as UnsulliedInterface).control.crowdControl.workerExists(workerId))) throw new Error(`Worker with ID "${workerId}" does not exist.`);
+      const worker = (unsullied as UnsulliedInterface).control.crowdControl.getWorker(workerId);
 
       const state = worker.currentState;
       // console.log('Queried state:', state);
@@ -155,16 +156,18 @@ const resolvers = {
   },
   Mutation: {
     async registerWorker(parent, { name }, { unsullied }) {
-      const worker = (unsullied as UnsulliedInterface).control.crowdControl.registerWorker({ name });
+      const worker = await (unsullied as UnsulliedInterface).control.crowdControl.registerWorker({ name });
 
       return worker;
     },
     async submitTaskResult(parent, { taskString, taskResultString, file }, { unsullied }) {
+      let _file;
       if (file) {
-        const { createReadStream, filename, mimetype, encoding } = await file;
-        console.log('Got file!', filename);
+        const _file = await file;
+        console.log('Got file!', _file.filename);
       }
-      await (unsullied as UnsulliedInterface).control.taskControl.submitTaskResult(taskString, taskResultString);
+
+      (unsullied as UnsulliedInterface).control.knowledgeControl.submitTaskResult(taskString, taskResultString, _file);
       return { isSubmitted: true };
     },
   },
@@ -183,12 +186,12 @@ const resolvers = {
     },
     workerState: {
       subscribe: (parent, { workerId }, { unsullied, pubsub }) => {
-        if (!((unsullied as UnsulliedInterface).control.crowdControl.workerIsAvailable(workerId))) throw new Error(`Worker with ID "${workerId}" is not available.`);
+        if (!((unsullied as UnsulliedInterface).control.crowdControl.workerExists(workerId))) throw new Error(`Worker with ID "${workerId}" is not available.`);
         const channel = "workerState" + workerId;
 
         let exists = channel in existingChannels;
 
-        const worker = (unsullied as UnsulliedInterface).control.crowdControl.getAvailableWorker(workerId);
+        const worker = (unsullied as UnsulliedInterface).control.crowdControl.getWorker(workerId);
         // console.log(exists, worker);
 
         const it = pubsub.asyncIterator(channel);

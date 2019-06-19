@@ -67,7 +67,7 @@ export module MicroTask {
 
   export function questionForImage(question: String): MicroTask {
     return {
-      taskType: TaskTypes.FIX,
+      taskType: TaskTypes.FIND,
       taskParams: [],
       interfaceType: InterfaceTypes.QUESTION,
       interfaceParams: [ question ],
@@ -76,3 +76,5 @@ export module MicroTask {
     };
   }
 }
+
+export * from './result';

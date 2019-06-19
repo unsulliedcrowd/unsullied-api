@@ -17,8 +17,8 @@ export async function runExample() {
   // Do things
 
   // Generate tasks
-  const tasks = unsulliedInterface.schema.generateTasks();
-  console.log(JSON.stringify(tasks.map(task => task.toString())));
+  // const tasks = unsulliedInterface.schema.generateTasks();
+  // console.log(JSON.stringify(tasks.map(task => task.toString())));
 
 
   // Create some workers

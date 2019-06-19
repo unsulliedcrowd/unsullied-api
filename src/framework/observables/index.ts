@@ -51,7 +51,8 @@ export class UnsulliedControl {
     this.knowledgeControl = new KnowledgeControl(this.configControl, this.knowledgeBase);
     this.taskControl = new TaskControl(this.configControl, this.knowledgeControl, this.crowdControl);
 
-    this.observable  = combineLatest(
+    let previousCrowdState = this.crowdControl.currentState;
+    this.observable = combineLatest(
       this.timer,
       this.configControl.subject,
       this.crowdControl.subject,
@@ -67,6 +68,12 @@ export class UnsulliedControl {
         knowledge: resultState,
       };
 
+      if (crowdState != previousCrowdState) {
+        console.log("CrowdState:", crowdState);
+        previousCrowdState = crowdState;
+      }
+
+      // console.log("Updating state:", newState);
       this.currentState = newState;
 
       return newState;
@@ -74,7 +81,7 @@ export class UnsulliedControl {
 
     this.observable.pipe(first()).subscribe(initialState => {
       console.log('Setting initial state', initialState);
-      this.currentState = initialState
+      this.currentState = initialState;
     });
 
     this.initialize();

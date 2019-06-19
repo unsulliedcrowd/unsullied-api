@@ -1,6 +1,6 @@
 import { Subject, BehaviorSubject } from 'rxjs';
 
-import { Persona, MicroTask } from '..';
+import { Persona, MicroTask, TaskResult } from '..';
 
 export class Worker {
   subject: Subject<Worker.State>;
@@ -17,6 +17,13 @@ export class Worker {
 
   assignTask(task: MicroTask): Worker {
     const newState = Worker.State.assignTask(this.currentState, task);
+    this.subject.next(newState);
+    this.currentState = newState;
+    return this;
+  }
+
+  completeTask(result: TaskResult): Worker {
+    const newState = Worker.State.completeTask(this.currentState, result);
     this.subject.next(newState);
     this.currentState = newState;
     return this;
@@ -52,6 +59,15 @@ export module Worker {
         isOnline: true,
         isWorkingOnTask: true,
         currentTask: task
+      }
+    }
+
+    export function completeTask(state: State, result: TaskResult): State {
+      return {
+        ...state,
+        isOnline: true,
+        isWorkingOnTask: false,
+        currentTask: null
       }
     }
 

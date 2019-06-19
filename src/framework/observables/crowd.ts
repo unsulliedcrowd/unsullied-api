@@ -1,16 +1,23 @@
-import { BehaviorSubject, combineLatest } from 'rxjs';
+import { BehaviorSubject, combineLatest, ReplaySubject, asapScheduler } from 'rxjs';
 import { map } from 'rxjs/operators';
 import * as uuid from 'uuid';
 import * as _ from 'lodash';
+import PQueue from 'p-queue';
 
 import { Worker, Persona, MicroTask, ConfigControl } from '..';
 
+const queue = new PQueue({
+  concurrency: 1
+});
+
 export type CrowdStats = {
+  seenWorkersTotal: number
   availableWorkersTotal: number
 };
 
 export module CrowdStats {
   export const INITIAL = {
+    seenWorkersTotal: 0,
     availableWorkersTotal: 0
   };
 }
@@ -38,7 +45,8 @@ export module CrowdState {
       ...state,
       stats: {
         ...state.stats,
-        availableWorkersTotal: ++state.stats.availableWorkersTotal
+        seenWorkersTotal: state.stats.seenWorkersTotal + 1,
+        availableWorkersTotal: state.stats.availableWorkersTotal + 1,
       },
       crowd: {
         availableWorkers: [].concat(state.crowd.availableWorkers, worker),
@@ -72,36 +80,44 @@ export module CrowdState {
   // }
 
   export function assignWorker(state: CrowdState, worker: Worker) {
-    return {
+    const newState = {
       ...state,
+      stats: {
+        ...state.stats,
+        availableWorkersTotal: (state.stats.availableWorkersTotal - 1)
+      },
       crowd: {
         availableWorkers: _.without(state.crowd.availableWorkers, worker),
         engagedWorkers: [].concat(state.crowd.engagedWorkers, worker),
       }
     }
+
+    console.log('Assigning worker...', newState);
+    return newState;
   }
 };
 
 export class CrowdControl {
   configControl: ConfigControl;
 
-  subject: BehaviorSubject<CrowdState>;
+  subject: ReplaySubject<CrowdState>;
   currentState: CrowdState;
 
   constructor(configControl: ConfigControl) {
     this.configControl = configControl;
     this.currentState = CrowdState.INITIAL;
-    this.subject = new BehaviorSubject(this.currentState);
+    this.subject = new ReplaySubject(1, undefined, asapScheduler);
+    this.subject.next(this.currentState);
   }
 
   initialize() {
-    combineLatest(
-      this.configControl.subject,
-    ).pipe(map((states) => {
-      const [ configState ] = states;
-
-      return this.currentState;
-    })).subscribe(this.subject);
+    // combineLatest(
+    //   this.configControl.subject,
+    // ).pipe(map((states) => {
+    //   const [ configState ] = states;
+    //
+    //   return this.currentState;
+    // })).subscribe(this.subject);
   }
 
   // initialize() {
@@ -128,13 +144,20 @@ export class CrowdControl {
   // }
 
 
-  workerIsAvailable(id: string) {
-    const result = this.getAvailableWorker(id);
+  workerExists(id: string) {
+    const result = this.getWorker(id);
     return result != undefined;
   }
 
-  getAvailableWorker(id: string) {
-    const result = _.find(this.currentState.crowd.availableWorkers, (worker) => {
+  getWorker(id: string) {
+    let result = _.find(this.currentState.crowd.availableWorkers, (worker) => {
+      // console.log('Checking worker', worker);
+      return worker.profile.id === id;
+    });
+
+    if (result) return result;
+
+    result = _.find(this.currentState.crowd.engagedWorkers, (worker) => {
       // console.log('Checking worker', worker);
       return worker.profile.id === id;
     });
@@ -144,7 +167,8 @@ export class CrowdControl {
     return result;
   }
 
-  registerWorker(_profile: Worker.Profile): Worker {
+  async registerWorker(_profile: Worker.Profile): Promise<Worker> {
+    console.log("Registering worker")
     const id = uuid.v4();
     const profile = {
       ..._profile,
@@ -157,19 +181,20 @@ export class CrowdControl {
 
     // TODO: Queue this
     const newState = CrowdState.addWorker(this.currentState, worker);
-    this.subject.next(newState);
     this.currentState = newState;
+    await queue.add(async () => this.subject.next(newState));
 
     return worker;
   }
 
-  assignWorker(worker: Worker, microTask: MicroTask): Worker {
+  async assignWorker(worker: Worker, microTask: MicroTask): Promise<Worker> {
+    console.log("CrowdControl assigning worker")
     const _worker = worker.assignTask(microTask);
 
     // TODO: Queue this
     const newState = CrowdState.assignWorker(this.currentState, worker);
-    this.subject.next(newState);
-    this.currentState = newState;
+    // this.currentState = newState;
+    await queue.add(async () => this.subject.next(newState));
 
     return _worker;
   }

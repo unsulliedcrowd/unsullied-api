@@ -19,6 +19,10 @@ export class KnowledgeBase {
     return this.schema.getClasses();
   }
 
+  getStaleEntities() {
+    return [];
+  }
+
   async seed() {
     return Promise.all(this.seedData.map(async (entityData) => {
       const subject = entityData["@id"];

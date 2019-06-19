@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import { BehaviorSubject, combineLatest } from 'rxjs';
 
-import { KnowledgeBase, RDFSubject, ConfigControl } from '..';
+import { KnowledgeBase, RDFSubject, ConfigControl, TaskResult } from '..';
 import { map } from 'rxjs/operators';
 
 export type KnowledgeStats = {
@@ -17,12 +17,16 @@ export module KnowledgeStats {
 export type KnowledgeState = {
   stats: KnowledgeStats,
   knownClasses: RDFSubject[],
+  pendingResults: TaskResult[],
+  knownStaleEntities: RDFSubject[],
 };
 
 export module KnowledgeState {
   export const INITIAL = {
     stats: KnowledgeStats.INITIAL,
-    knownClasses: []
+    knownClasses: [],
+    pendingResults: [],
+    knownStaleEntities: [],
   };
 
   export function updateKnownClasses(state: KnowledgeState, knownClasses: RDFSubject[]): KnowledgeState {
@@ -34,6 +38,24 @@ export module KnowledgeState {
       },
       knownClasses: knownClasses
     }
+  }
+
+  export function updateKnownStaleEntities(state: KnowledgeState, knownStaleEntities: RDFSubject[]): KnowledgeState {
+    return {
+      ...state,
+      stats: {
+        ...state.stats,
+        totalEntityTypes: knownStaleEntities.length
+      },
+      knownStaleEntities: knownStaleEntities
+    }
+  }
+
+  export function updateResults(state: KnowledgeState, result: TaskResult): KnowledgeState {
+    return {
+      ...state,
+      pendingResults: [].concat(state.pendingResults, result)
+    };
   }
 };
 
@@ -74,7 +96,25 @@ export class KnowledgeControl {
     return newClasses;
   }
 
+  updateStaleEntities(): RDFSubject[] {
+    const newClasses = this.knowledgeBase.getStaleEntities();
 
+    const newState = KnowledgeState.updateKnownClasses(this.currentState, newClasses);
+    this.subject.next(newState);
+    this.currentState = newState;
+
+    return newClasses;
+  }
+
+  submitTaskResult(taskString: String, taskResultString: String, file?: String): TaskResult {
+    const taskResult: TaskResult = { taskString, taskResultString, file };
+
+    const newState = KnowledgeState.updateResults(this.currentState, taskResult);
+    this.subject.next(newState);
+    this.currentState = newState;
+
+    return taskResult;
+  }
 
 }
 

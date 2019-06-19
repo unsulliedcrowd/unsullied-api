@@ -1,6 +1,14 @@
 import { BehaviorSubject, combineLatest } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, flatMap } from 'rxjs/operators';
 import * as semtools from 'semantic-toolkit';
+import * as _ from 'lodash';
+
+function aggregateResults(pendingResults: TaskResult[]): EntityData {
+
+  return {
+
+  };
+}
 
 import {
   KnowledgeControl,
@@ -14,7 +22,9 @@ import {
   CrowdControl,
   CrowdState,
   Worker,
-  ConfigState
+  ConfigState,
+  EntityData,
+  TaskResult
 } from '..';
 
 export type TaskStats = {
@@ -49,9 +59,29 @@ export module TaskState {
     // TODO: Generate new tasks here, complete old tasks
     console.log('Processing knowledge state (generating and aggregating tasks)...');
 
+    console.log("Pending results:", newKnowledgeState.pendingResults);
+
+    const entityData = aggregateResults(newKnowledgeState.pendingResults);
+
+
     console.log("Known classes:", newKnowledgeState.knownClasses);
 
-    const microTasks = newKnowledgeState.knownClasses.map(entityClass => {
+    const findMicroTasks = newKnowledgeState.knownClasses.map(entityClass => {
+      const localName = semtools.getLocalName(entityClass);
+      const location = currentConfigState.taskGenerationConfig.initialLocation;
+
+      let question;
+      if (location != null) question = `Please upload an image of a ${localName} within the area ${location}`;
+      else question = `Please upload an image of a ${localName}`;
+
+      // TODO: Build composite tasks
+      // question += ', along with a description'
+
+      const microTask = MicroTask.questionForImage(question);
+      return microTask;
+    });
+
+    const fixMicroTasks = newKnowledgeState.knownStaleEntities.map(entityClass => {
       const localName = semtools.getLocalName(entityClass);
       const location = currentConfigState.taskGenerationConfig.initialLocation;
 
@@ -70,9 +100,10 @@ export module TaskState {
     const passiveTasks = findTasks;
     const activeTasks = [];
 
-    // const microTasks = [
-    //   // MicroTask.questionForLabel("This is a test question?", ["test1", "test2"])
-    // ];
+    const microTasks = [
+      // MicroTask.questionForLabel("This is a test question?", ["test1", "test2"])
+      ...findMicroTasks
+    ];
 
     return {
       stats: {
@@ -94,7 +125,7 @@ export module TaskState {
     return taskState;
   }
 
-  export function processCrowdState(taskState: TaskState, oldCrowdState: CrowdState, newCrowdState: CrowdState, currentConfigState: ConfigState, currentKnowledgeState: KnowledgeState): TaskState {
+  export function processCrowdState(taskState: TaskState, oldCrowdState: CrowdState, newCrowdState: CrowdState, currentConfigState: ConfigState, currentKnowledgeState: KnowledgeState, taskControl: TaskControl): TaskState {
     // TODO: Assign tasks here
     const availableTasks = taskState.microTasks;
     const { availableWorkers} = newCrowdState.crowd;
@@ -107,13 +138,20 @@ export module TaskState {
     const [ firstTask ] = availableTasks;
     const [ lastWorker ] = availableWorkers.reverse();
     const newState = TaskState.assignTask(taskState, firstTask, lastWorker);
-    lastWorker.assignTask(firstTask);
+
 
     return newState;
   }
 
   export function assignTask(taskState: TaskState, task: MicroTask, worker: Worker) {
-    return taskState;
+    return {
+      ...taskState,
+      stats: {
+        ...taskState.stats,
+        availableTasksTotal: taskState.microTasks.length - 1,
+      },
+      microTasks: _.without(taskState.microTasks, task)
+    };
   }
 };
 
@@ -146,7 +184,7 @@ export class TaskControl {
       this.configControl.subject,
       this.knowledgeControl.subject,
       this.crowdControl.subject,
-    ).pipe(map((states) => {
+    ).pipe(flatMap(async (states) => {
       const [ configState, knowledgeState, crowdState ] = states;
 
       if (knowledgeState != this.currentKnowledgeState) {
@@ -159,12 +197,26 @@ export class TaskControl {
       }
 
       if (crowdState != this.currentCrowdState) {
-        const newState = TaskState.processCrowdState(this.currentState, this.currentCrowdState, crowdState, this.configControl.currentState, this.currentKnowledgeState);
+        // const newState = TaskState.processCrowdState(this.currentState, this.currentCrowdState, crowdState, this.configControl.currentState, this.currentKnowledgeState);
+        const availableTasks = this.currentState.microTasks;
+        const { availableWorkers} = crowdState.crowd;
+        console.log(`Processing crowd state with ${availableWorkers.length} available workers and ${availableTasks.length} available tasks (allocating tasks)...`);
 
-        this.currentState = newState;
-        this.currentCrowdState = crowdState;
+        if (availableTasks.length === 0) return this.currentState;
+        if (availableWorkers.length === 0) return this.currentState;
 
-        return newState;
+        // TODO: Make this make sense
+        const [ firstTask ] = availableTasks;
+        const [ lastWorker ] = availableWorkers.reverse();
+        // const newState = TaskState.assignTask(this.currentState, firstTask, lastWorker);
+        // this.crowdControl.assignWorker(lastWorker, firstTask);
+        // // lastWorker.assignTask(firstTask);
+        //
+        // this.currentState = newState;
+        // this.currentCrowdState = crowdState;
+        await this.assignTask(firstTask, lastWorker);
+
+        return this.currentState;
 
       }
 
@@ -172,12 +224,11 @@ export class TaskControl {
     })).subscribe(this.subject);
   }
 
-  async submitTaskResult(taskString: String, taskResultString: String) {
-    return;
-  }
-
-  assignTask(task: MicroTask, worker: Worker) {
+  async assignTask(task: MicroTask, worker: Worker) {
     const newState = TaskState.assignTask(this.currentState, task, worker);
+    await this.crowdControl.assignWorker(worker, task);
+    worker.assignTask(task);
+    this.currentState = newState;
     this.subject.next(newState);
     // return task;
   }
